@@ -1,30 +1,40 @@
 const express = require("express");
 const app = express();
 
-// Middleware to parse JSON in POST requests
 app.use(express.json());
 
-// In-memory storage for the last POST data
-let lastData = null;
+// In-memory storage: key = client IP, value = data
+const table = {};
 
-// POST route to save data
+// POST /data
+// Body: { value: "some data" }
 app.post("/data", (req, res) => {
-    lastData = req.body;  // store the latest POSTed data
-    console.log("Received POST:", lastData);
-    res.json({ status: "received", savedData: lastData });
+    const clientIp = req.ip; // automatically gets the client IP
+    const { value } = req.body;
+
+    if (value === undefined) {
+        return res.status(400).json({ error: "Missing value in POST body" });
+    }
+
+    table[clientIp] = value; // store data by IP
+    console.log(`Received POST from ${clientIp}:`, value);
+
+    res.json({ status: "received", yourIp: clientIp, stored: value });
 });
 
-// GET route to retrieve the last posted data
+// GET /data
+// Returns the data associated with the client’s IP, or nothing if not found
 app.get("/data", (req, res) => {
-    if (lastData) {
-        res.json({ status: "ok", lastData: lastData });
+    const clientIp = req.ip;
+
+    if (table[clientIp]) {
+        res.json({ data: table[clientIp] });
     } else {
-        res.json({ status: "empty", message: "No data has been posted yet" });
+        // Send an empty response (HTTP 200 with no content)
+        res.status(200).end();
     }
 });
 
-// Listen on the port Render provides
+// Start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log("Server running on port", PORT);
-});
+app.listen(PORT, () => console.log("Server running on port", PORT));
