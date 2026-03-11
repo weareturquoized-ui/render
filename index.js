@@ -13,7 +13,7 @@ app.get("/", (req, res) => {
 // Test POST request at /data
 app.post("/data", (req, res) => {
   console.log("Received POST:", req.body);
-  res.json({ status: "received", yourData: req.body });
+  res.json({ status: "received", "you said: "+req.body });
 });
 
 // Listen on the port Render gives us
