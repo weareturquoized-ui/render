@@ -1,23 +1,30 @@
-// index.js
 const express = require("express");
 const app = express();
 
-// This allows your server to read JSON from POST requests
+// Middleware to parse JSON in POST requests
 app.use(express.json());
 
-// Test GET request at root
-app.get("/", (req, res) => {
-  res.send("Server is working!");
-});
+// In-memory storage for the last POST data
+let lastData = null;
 
-// Test POST request at /data
+// POST route to save data
 app.post("/data", (req, res) => {
-  console.log("Received POST:", req.body);
-  res.json({ status: "received", "you said: "+req.body });
+    lastData = req.body;  // store the latest POSTed data
+    console.log("Received POST:", lastData);
+    res.json({ status: "received", savedData: lastData });
 });
 
-// Listen on the port Render gives us
+// GET route to retrieve the last posted data
+app.get("/data", (req, res) => {
+    if (lastData) {
+        res.json({ status: "ok", lastData: lastData });
+    } else {
+        res.json({ status: "empty", message: "No data has been posted yet" });
+    }
+});
+
+// Listen on the port Render provides
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log("Server running on port", PORT);
+    console.log("Server running on port", PORT);
 });
