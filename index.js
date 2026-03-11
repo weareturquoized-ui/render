@@ -3,36 +3,40 @@ const app = express();
 
 app.use(express.json());
 
-// In-memory storage: key = client IP, value = data
+// In-memory storage: key = user identifier, value = data
 const table = {};
 
 // POST /data
-// Body: { value: "some data" }
+// Body: { id: "username", value: "some data" }
 app.post("/data", (req, res) => {
-    const clientIp = req.ip; // automatically gets the client IP
-    const { value } = req.body;
+    const { id, value } = req.body;
 
-    if (value === undefined) {
-        return res.status(400).json({ error: "Missing value in POST body" });
+    if (!id || value === undefined) {
+        return res.status(400).json({ error: "Missing id or value in POST body" });
     }
 
-    table[clientIp] = value; // store data by IP
-    console.log(`Received POST from ${clientIp}:`, value);
+    table[id] = value; // store data under the username/id
+    console.log(`Received POST from ${id}:`, value);
 
-    res.json({ status: "received", yourIp: clientIp, stored: value });
+    res.json({ status: "received", storedFor: id, stored: value });
 });
 
 // GET /data
-// Returns the data associated with the client’s IP, then clears it
+// Query param: ?id=username
+// Returns the data for that username and clears it
 app.get("/data", (req, res) => {
-    const clientIp = req.ip;
+    const id = req.query.id; // get the identifier from query
 
-    if (table[clientIp]) {
-        const dataToSend = table[clientIp];
-        delete table[clientIp]; // clear data after sending
+    if (!id) {
+        return res.status(400).json({ error: "Missing id in query" });
+    }
+
+    if (table[id]) {
+        const dataToSend = table[id];
+        delete table[id]; // clear data after sending
         res.json({ data: dataToSend });
     } else {
-        // Send an empty response (HTTP 200 with no content)
+        // Send an empty response if nothing is stored for that id
         res.status(200).end();
     }
 });
